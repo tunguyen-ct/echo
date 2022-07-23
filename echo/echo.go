@@ -21,6 +21,7 @@ func New() (e *Echo) {
 	e = &Echo{
 		Server: new(http.Server),
 	}
+	e.Server.Handler = e
 	return
 }
 
