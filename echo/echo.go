@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"reflect"
+	"runtime"
 	"sync"
 )
 
@@ -15,8 +17,18 @@ type Echo struct {
 	ListenerNetwork string
 }
 
+type Context interface {
+	// Request returns `*http.Request`.
+	Request() *http.Request
+}
+
+type Route interface{}
+
+// HandlerFunc defines a function to serve HTTP requests.
+type HandlerFunc func(c Context) error
+
 func (e *Echo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "hello world")
+	fmt.Fprintf(w, "hello worlddddddd")
 }
 
 func New() (e *Echo) {
@@ -82,4 +94,30 @@ func (e *Echo) ListenerAddr() net.Addr {
 		return nil
 	}
 	return e.Listener.Addr()
+}
+
+func handlerName(h HandlerFunc) string {
+	t := reflect.ValueOf(h).Type()
+	if t.Kind() == reflect.Func {
+		return runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
+	}
+	return t.String()
+}
+
+func (e *Echo) add(host, method, path string, handler HandlerFunc) *Route {
+	name := handlerName(handler)
+	fmt.Println(name)
+	return nil
+}
+
+// Add registers a new route for an HTTP method and path with matching handler
+// in the router with optional route-level middleware.
+func (e *Echo) Add(method, path string, handler HandlerFunc) *Route {
+	return e.add("", method, path, handler)
+}
+
+// GET registers a new GET route for a path with matching handler in the router
+// with optional route-level middleware.
+func (e *Echo) GET(path string, h HandlerFunc) *Route {
+	return e.Add(http.MethodGet, path, h)
 }

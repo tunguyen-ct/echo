@@ -1,9 +1,8 @@
 package main
 
 import (
-	"log"
-
 	"github.com/tunguyen-ct/echo/echo"
+	"log"
 )
 
 /*
@@ -43,7 +42,14 @@ Example:
 Learn more at https://echo.labstack.com
 */
 
+func hello(c echo.Context) error {
+	return nil
+}
+
 func main() {
 	e := echo.New()
+
+	e.GET("/hello", hello)
+
 	log.Fatal(e.Start(":1323"))
 }
