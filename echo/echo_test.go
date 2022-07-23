@@ -44,7 +44,7 @@ func TestEchoStart(t *testing.T) {
 	errChan := make(chan error)
 
 	go func() {
-		err := e.Start()
+		err := e.Start(":8080")
 		if err != nil {
 			errChan <- err
 		}

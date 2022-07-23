@@ -1,6 +1,7 @@
 package echo
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -8,9 +9,10 @@ import (
 )
 
 type Echo struct {
-	Server       *http.Server
-	Listener     net.Listener
-	startupMutex sync.RWMutex
+	Server          *http.Server
+	Listener        net.Listener
+	startupMutex    sync.RWMutex
+	ListenerNetwork string
 }
 
 func (e *Echo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -19,20 +21,43 @@ func (e *Echo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func New() (e *Echo) {
 	e = &Echo{
-		Server: new(http.Server),
+		Server:          new(http.Server),
+		ListenerNetwork: "tcp",
 	}
 	e.Server.Handler = e
 	return
 }
 
-func (e *Echo) configureServer(s *http.Server) error {
-	listener, err := net.Listen("tcp", ":8080")
+// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
+// connections. It's used by ListenAndServe and ListenAndServeTLS so
+// dead TCP connections (e.g. closing laptop mid-download) eventually
+// go away.
+type tcpKeepAliveListener struct {
+	*net.TCPListener
+}
 
+func newListener(address, network string) (*tcpKeepAliveListener, error) {
+	if network != "tcp" && network != "tcp4" && network != "tcp6" {
+		return nil, ErrInvalidListenerNetwork
+	}
+	l, err := net.Listen(network, address)
+	if err != nil {
+		return nil, err
+	}
+	return &tcpKeepAliveListener{l.(*net.TCPListener)}, nil
+}
+
+var (
+	ErrInvalidListenerNetwork = errors.New("invalid listener network")
+)
+
+func (e *Echo) configureServer(s *http.Server) error {
+	l, err := newListener(s.Addr, e.ListenerNetwork)
 	if err != nil {
 		return err
 	}
 
-	e.Listener = listener
+	e.Listener = l
 	s.Handler = e
 
 	return nil
