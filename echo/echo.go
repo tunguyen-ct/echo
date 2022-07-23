@@ -38,10 +38,14 @@ func (e *Echo) configureServer(s *http.Server) error {
 	return nil
 }
 
-func (e *Echo) Start() error {
+func (e *Echo) Start(address string) error {
+	e.startupMutex.Lock()
+	e.Server.Addr = address
 	if err := e.configureServer(e.Server); err != nil {
+		e.startupMutex.Unlock()
 		return err
 	}
+	e.startupMutex.Unlock()
 	return e.Server.Serve(e.Listener)
 }
 
